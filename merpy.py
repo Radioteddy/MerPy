@@ -18,7 +18,7 @@ au = constants.value(u'Hartree energy in eV')
 qau = constants.value(u'Bohr radius')
 e = constants.value(u'elementary charge')
 hbar = constants.hbar
-me = constants.m_e
+me = constants.m_e  
 kbol = 11604.51928260e0 #K/eV
 
 class Nsh(object):

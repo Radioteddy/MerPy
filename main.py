@@ -9,7 +9,7 @@ KSh = merpy.Nsh(np.array([500]), np.array([400]), np.array([150]), 545.36)
 Shells = [ValBand, KSh]
 Temp = 293.0
 
-N = 300
+N = 3
 Sp = np.zeros((N, len(Shells)))
 lambd = np.zeros((N, len(Shells)))
 dE = merpy.Energy_gr(N)
