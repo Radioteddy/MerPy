@@ -21,7 +21,7 @@ hbar = constants.hbar
 me = constants.m_e  
 kbol = 11604.51928260e0 #K/eV
 
-class Nsh(object):
+class Shell(object):
     '''
     The Number of SHells class contains parameters of shell
 
@@ -128,7 +128,7 @@ def ELF(q, omega, gamma, omega_pl):
 
 VELF = np.vectorize(ELF) 
 
-def Imewq(q, w, w_pl, gamma, a):
+def Imewq(q, w, Shell):
     '''
     Return the sum of Mermin-type ELFs 
 
@@ -140,18 +140,23 @@ def Imewq(q, w, w_pl, gamma, a):
         q is the transferred momentum (in a.u.)
     w : float or ndarray
         omega is the transferred energy (in a.u.)
-    w_pl: float
-        omega_pl is the plasmon frequency which sets the value of upper limit of integration  (in a.u.)
-    gamma : float
-        gamma is the damping parameter (in a.u.)
-    a   : float
-        a is the oscillator strength
+    Shell : object
+        Shell contains such parameters of Mermin-type oscillator
+        1. w_pl : float
+            omega_pl is the plasmon frequency which sets the value of upper limit of integration  (in a.u.)
+        2. gamma : float
+            gamma is the damping parameter (in a.u.)
+        3. a   : float
+            a is the oscillator strength
 
     Return
     -------
     out: float or ndarray
         result is the ndarray which contains sum Mermin-type ELFs depends on q and w
     '''
+    w_pl = Shell.E0
+    gamma = Shell.Gamma
+    a = Shell.A
     result = 0
     for i in range(len(w_pl)):
         sq = q*np.sqrt(e)*qau
@@ -161,7 +166,7 @@ def Imewq(q, w, w_pl, gamma, a):
     return result
 
 
-def diff_IMFP(T, w, Nsh, Temp):
+def diff_IMFP(T, w, Shell, Temp):
     '''
     Return the derivative of inverse inelastic mean free path 
 
@@ -171,8 +176,8 @@ def diff_IMFP(T, w, Nsh, Temp):
         T is the incident energy (in eV)
     w : float
         w is the transferred energy (in eV)
-    Nsh : object
-        Nsh is the class describing parameters of atomic shell
+    Shell : object
+        Shell is the class describing parameters of atomic shell
     Temp: float
         Temp is temperature (in K) of the target
 
@@ -183,30 +188,27 @@ def diff_IMFP(T, w, Nsh, Temp):
     qmin = (np.sqrt(T) - np.sqrt(T-w))*np.sqrt(2.0*me/hbar**2)
     qmax = (np.sqrt(T) + np.sqrt(T-w))*np.sqrt(2.0*me/hbar**2)
     
-    E0 = Nsh.E0
-    Gamma = Nsh.Gamma
-    A = Nsh.A
-#     dq = np.linspace(qmin, qmax, 10)
-#     Ime = Imewq(dq, w, E0, Gamma, A)/dq
-#     dLs = integrate.simps(Ime, dq, axis=0)
+    # dq = np.linspace(qmin, qmax)
+    # Ime = Imewq(dq, w, E0, Gamma, A)/dq
+    # dLs = integrate.simps(Ime, dq, axis=0)
     dLs = 0.0
     hq = qmin
-    n = 10
+    n = 50
     dq = (qmin-qmax)/n
     dLs0 = 0.0
     while hq < qmax:
         dq = hq/n
         a = hq + dq/2
-        temp1 = Imewq(a, w, E0, Gamma, A)
+        temp1 = Imewq(a, w, Shell)
         b = hq + dq
-        dL = Imewq(b, w, E0, Gamma, A)
+        dL = Imewq(b, w, Shell)
         dLs = dLs + dq/6 * (dLs0 + 4*temp1 + dL)/hq
         dLs0 = dL
         hq = hq + dq
     return 1/(np.pi*qau*1e10*T)*dLs/(1 - np.exp(-w/Temp*kbol))
 
 
-def TotIMFP(T, Nsh, Temp):
+def TotIMFP(T, Shell, Temp):
     '''
     Return the inelastic mean free path and stopping power depends on incident energy T 
 
@@ -214,8 +216,8 @@ def TotIMFP(T, Nsh, Temp):
     ----------
     T : float
         T is the incident energy (in eV)
-    Nsh : object
-        Nsh is the class describing parameters of atomic shell
+    Shell : object
+        Shell is the class describing parameters of atomic shell
     Temp: float
         Temp is temperature (in K) of the target
 
@@ -224,29 +226,29 @@ def TotIMFP(T, Nsh, Temp):
     out: tuple (imfp, dedx) of floats
         imfp is the inelastic mean free path and dedx is the stopping power
     '''      
-    if T <= Nsh.Ip:
+    if T <= Shell.Ip:
         imfp = np.inf
         dEdx = T/np.inf
     else:
-        Emin = Nsh.Ip 
-        Emax = (T + Nsh.Ip)/2
+        Emin = Shell.Ip 
+        Emax = (T + Shell.Ip)/2
         n = 20*max(int(Emin), 10)
-#         dE = np.linspace(Emin, Emax, n)
-#         imfp = 1/integrate.simps(diff_IMFP(T, dE, Nsh, Temp), dE)
-#         dEdx = integrate.simps(diff_IMFP(T, dE, Nsh, Temp)*dE, dE)
+        # dE = np.linspace(Emin, Emax, n)
+        # imfp = 1/integrate.simps(diff_IMFP(T, dE, Shell, Temp), dE)
+        # dEdx = integrate.simps(diff_IMFP(T, dE, Shell, Temp)*dE, dE)
         dE = (Emax - Emin)/n
         i = 1
         E = Emin
         Ltot1 = 0.0
-        Ltot0 = diff_IMFP(T, E, Nsh, Temp)
+        Ltot0 = diff_IMFP(T, E, Shell, Temp)
         dEdx = 0.0
         while E <= Emax:
             dE = (1/(E + 1) + E)/n
             a = E + dE/2
-            dL = diff_IMFP(T, a, Nsh, Temp)
+            dL = diff_IMFP(T, a, Shell, Temp)
             temp1 = dL
             b = E + dE
-            dL = diff_IMFP(T, b, Nsh, Temp)
+            dL = diff_IMFP(T, b, Shell, Temp)
             temp2 = dE/6 * (Ltot0 + 4*temp1 + dL)
             Ltot1 = Ltot1 + temp2
             dEdx = dEdx + E*temp2

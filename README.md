@@ -3,7 +3,7 @@
 MerPy is the python project with a realization of Mermin-type oscillators based energy loss function.
 
 ## Repository
-Repository contains MerPy lib (file merpy.py) and small code example of using (file main.py)
+Repository contains MerPy lib (file merpy.py), module for reading input data (file read_data.py) and parallel code which calculate inelastic mean free path and stopping power of water (file main.py). Folder INPUT_CDF contains .cdf file with parameters of water-elf
 
 ## Theory
 
