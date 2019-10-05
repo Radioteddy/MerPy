@@ -5,8 +5,6 @@ import read_data as rd
 import merpy
 import time
 
-ValBand = merpy.Shell(np.array([22, 34, 47]), np.array([14, 19, 32]), np.array([170.3, 96.75, 110.45]), 7.0)
-KSh = merpy.Shell(np.array([500]), np.array([400]), np.array([150]), 545.36)
 Shells = rd.read_cdf('Water')
 Temp = 293.0
 
