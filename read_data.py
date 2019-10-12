@@ -44,6 +44,5 @@ def read_cdf(material_name):
         print('Error: .cdf file does not exist!')
     return Shells
 
-read_cdf('DNA')
 
 
