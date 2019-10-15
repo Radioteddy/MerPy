@@ -66,7 +66,6 @@ def integrand(k, q, omega, gamma):
     int_2 = k * (np.arctan2(gamma, w_pl + k*q) + np.arctan2(gamma, w_mi - k*q) - np.arctan2(gamma, w_pl - k*q) - np.arctan2(gamma, w_mi + k*q))
     return int_1, int_2
 
-
 def chi(q, omega, gamma, omega_pl):
     '''
     Return the chi_1 and chi_2 (see https://arxiv.org/abs/1512.09155)
@@ -94,6 +93,75 @@ def chi(q, omega, gamma, omega_pl):
     chi_1, chi_2 = integrate.simps(integrand(k, q ,omega, gamma), k)
     return chi_1, chi_2
 
+def int_1(x, g):
+    """
+    return undifined integral for analytical solution
+
+    Parameters
+    ----------
+    x : float
+        integration limit
+    g : damping parameter
+     
+    Return
+    -------
+    out : numpy array (re_int, im_int) of floats 
+    """    
+    re_int_1 = ((x**2 + g**2)*np.log(x**2 + g**2) - x**2) / 2
+    im_int_1 = ((x**2 + g**2)*np.arctan(x/g) - x*g) / 2
+    return np.array([re_int_1, im_int_1])
+
+def int_2(x, g):
+    """
+    return undifined integral for analytical solution
+
+    Parameters
+    ----------
+    x : float
+        integration limit
+    g : damping parameter
+     
+    Return
+    -------
+    out : numpy array (re_int, im_int) of floats 
+    """
+    re_int_2 = x*(np.log(x**2 + g**2) - 2) + 2*g*np.arctan(x/g) 
+    im_int_2 = x*np.arctan(x/g) - 0.5*g*np.log(x**2 + g**2)
+    return np.array([re_int_2, im_int_2])
+
+def achi(q, w, g, w_pl):
+    '''
+    Return the chi_1 and chi_2 (see https://arxiv.org/abs/1512.09155)
+    analytical evaluation
+
+    Parameters
+    ----------
+    q : float
+        q is the transferred momentum (in a.u.)
+    w : float
+        w is the transferred energy (in a.u.)
+    g : float
+        g is the damping parameter (in a.u.)
+    w_pl: float
+        w_pl is the plasmon frequency which sets the value of upper limit of integration 
+    
+    Return
+    -------
+    out :   tuple (chi_1, chi_2) of floats 
+        chi_1, chi_2 are real and imaginary parts of integrand  
+    
+    '''   
+    n = w_pl**2/(4*np.pi)
+    q_f = (3*np.pi**2 * n)**(1/3)
+    w_pl = q**2 / 2 + w
+    w_mi =  - w + q**2 / 2
+    res_1 = (int_1(q*q_f + w_pl, g) - int_1(w_pl, g)) - w_pl * (int_2(q*q_f + w_pl, g) - int_2(w_pl, g))
+    res_2 = (int_1(q*q_f - w_pl, g) - int_1(-w_pl, g)) + w_pl * (int_2(q*q_f - w_pl, g) - int_2(-w_pl, g))
+    res_3 = (int_1(q*q_f + w_mi, g) - int_1(w_mi, g)) - w_mi * (int_2(q*q_f + w_mi, g) - int_2(w_mi, g))
+    res_4 = (int_1(q*q_f - w_mi, g) - int_1(-w_mi, g)) + w_mi * (int_2(q*q_f - w_mi, g) - int_2(-w_mi, g))
+    re_res = (res_1 - res_2 + res_3 - res_4)[0] / (2*q**2)
+    im_res = -(res_1 + res_2 - res_3 - res_4)[1] / (q**2) 
+    return re_res, im_res
 
 def ELF(q, omega, gamma, omega_pl):
     '''
@@ -119,7 +187,7 @@ def ELF(q, omega, gamma, omega_pl):
     '''
     n = omega_pl**2 / (4*np.pi)
     q_TF = 4 * (3*n/np.pi)**(1/3)
-    chi_1, chi_2 = chi(q, omega, gamma, omega_pl)
+    chi_1, chi_2 = achi(q, omega, gamma, omega_pl)
     denom = (omega*(chi_1 + np.pi*q**3/2) - chi_2*gamma*(1 + q**2/q_TF**2))**2 + (chi_1*gamma*(1 + q**2/q_TF**2) + omega*chi_2)**2
     numer = (np.pi*q**3*omega/2 * (gamma*chi_1 + omega*chi_2) -  gamma*omega*q**2/q_TF**2 * (chi_1**2 + chi_2**2))
     if q <= 1e-3:
@@ -166,7 +234,6 @@ def Imewq(q, w, Shell):
         # result = result + a[i]*w*gamma[i]/((w**2 - E0**2)**2 + (gamma[i]*w)**2)
     return result
 
-
 def diff_IMFP(T, w, Shell, Temp):
     '''
     Return the derivative of inverse inelastic mean free path 
@@ -208,7 +275,6 @@ def diff_IMFP(T, w, Shell, Temp):
         hq = hq + dq
     return 1/(np.pi*qau*1e10*T)*dLs/(1 - np.exp(-w/Temp*kbol))
 
-
 def TotIMFP(T, Shell, Temp):
     '''
     Return the inelastic mean free path and stopping power depends on incident energy T 
@@ -238,7 +304,6 @@ def TotIMFP(T, Shell, Temp):
         # imfp = 1/integrate.simps(diff_IMFP(T, dE, Shell, Temp), dE)
         # dEdx = integrate.simps(diff_IMFP(T, dE, Shell, Temp)*dE, dE)
         dE = (Emax - Emin)/n
-        i = 1
         E = Emin
         Ltot1 = 0.0
         Ltot0 = diff_IMFP(T, E, Shell, Temp)
